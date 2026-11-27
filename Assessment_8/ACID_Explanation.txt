@@ -1,0 +1,45 @@
+SET 3 – RETAIL INVENTORY RESERVATION
+ACID EXPLANATION
+
+1. ATOMICITY
+Atomicity means that a transaction is completed fully or not at all.
+Example: When a customer orders two laptops, the system decreases stock,
+inserts the order and inserts the order line. If inserting the order line
+fails, the stock update and order insertion must also be rolled back.
+Therefore, partial completion is prevented.
+
+2. CONSISTENCY
+Consistency means every committed transaction leaves the database in a
+valid state and preserves defined rules.
+Example: If 10 smartphones are available and a customer purchases 3,
+the remaining stock must be 7. Stock must never become negative.
+The CHECK (stock_quantity >= 0) constraint helps enforce this rule.
+
+3. ISOLATION
+Isolation means concurrent transactions should not interfere in a way
+that causes incorrect results.
+Example: If only 5 smartphones remain and two customers each try to
+reserve 4, SELECT ... FOR UPDATE locks the product row while one
+transaction checks and changes stock. The second transaction then sees
+the updated stock and cannot reserve 4 more. This prevents overselling.
+
+4. DURABILITY
+Durability means committed changes remain saved even after a crash or
+restart.
+Example: After the order and stock reservation are committed, a server
+restart should not erase the order, order line or stock update. InnoDB
+provides transaction logging and recovery to support durability.
+
+NON-TRANSACTIONAL DESIGN FAILURE
+MySQL MyISAM is a non-transactional storage engine and does not support
+ROLLBACK. Suppose a purchase decreases stock from 10 to 8 and inserts
+an order, but the order-line insertion then fails. With MyISAM, the
+earlier changes cannot be rolled back. Stock may remain 8 even though
+the order is incomplete. This violates atomicity and leaves inconsistent
+data.
+
+SOLUTION
+Use InnoDB for every table participating in the reservation transaction.
+The supplied reservation.sql script uses InnoDB for Categories, Products,
+Orders and OrderItems. Its transaction commits all related changes
+together or rolls them back together.
